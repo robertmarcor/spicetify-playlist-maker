@@ -1,6 +1,6 @@
 // Playlist Maker: paste a song list (plain lines or a markdown checklist), get a Spotify playlist.
 (async function playlistMaker() {
-  if (!Spicetify?.Platform?.RootlistAPI || !Spicetify.Topbar || !Spicetify.PopupModal) {
+  if (!Spicetify?.Platform?.RootlistAPI || !Spicetify.Platform.GraphQLLoader || !Spicetify.GraphQL?.Definitions || !Spicetify.Topbar || !Spicetify.PopupModal) {
     setTimeout(playlistMaker, 300);
     return;
   }
@@ -12,24 +12,27 @@
     return (items.length ? items : lines).map((l) => l.replace(/^([-*+]|\d+\.)\s+(\[.\]\s+)?/, "").trim()).filter(Boolean);
   }
 
-  async function findTrack(query) {
-    const res = await Spicetify.CosmosAsync.get(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`
-    );
-    const t = res?.tracks?.items?.[0];
-    return t ? { uri: t.uri, label: `${t.name} — ${t.artists.map((a) => a.name).join(", ")}` } : null;
-  }
+  const words = (s) => s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
 
-  async function addTracks(playlistUri, uris) {
-    try {
-      await Spicetify.Platform.PlaylistAPI.add(playlistUri, uris, { before: "end" });
-    } catch {
-      // shortcut: falls back to the Web API if the client's internal add() signature changes
-      const id = playlistUri.split(":").pop();
-      for (let i = 0; i < uris.length; i += 100) {
-        await Spicetify.CosmosAsync.post(`https://api.spotify.com/v1/playlists/${id}/tracks`, { uris: uris.slice(i, i + 100) });
-      }
+  // Spotify's own search (CosmosAsync is gone in newer clients). Picks the track whose
+  // title + artists share the most words with the query, so "A x B" mashups beat plain "A".
+  async function findTrack(query) {
+    const res = await Spicetify.Platform.GraphQLLoader(Spicetify.GraphQL.Definitions.searchModalResults, {
+      searchTerm: query, offset: 0, limit: 10, numberOfTopResults: 10,
+      includeAudiobooks: false, includePreReleases: false, includeAuthors: false,
+      includeLocalConcertsField: false, includeArtistHasConcertsField: false,
+    });
+    const tracks = (res?.data?.searchV2?.topResultsV2?.itemsV2 ?? [])
+      .map((i) => i.item?.data)
+      .filter((d) => d?.__typename === "Track");
+    const q = words(query);
+    let best = null, bestScore = -1;
+    for (const t of tracks) {
+      const have = new Set(words(`${t.name} ${t.artists.items.map((a) => a.profile.name).join(" ")}`));
+      const score = q.filter((w) => have.has(w)).length;
+      if (score > bestScore) [best, bestScore] = [t, score];
     }
+    return best ? { uri: best.uri, label: `${best.name} — ${best.artists.items.map((a) => a.profile.name).join(", ")}` } : null;
   }
 
   function openModal() {
@@ -74,7 +77,7 @@
       try {
         if (!uris.length) throw new Error("no songs matched");
         const playlistUri = await Spicetify.Platform.RootlistAPI.createPlaylist(name, { before: "start" });
-        await addTracks(playlistUri, uris);
+        await Spicetify.Platform.PlaylistAPI.add(playlistUri, uris, { before: "end" });
         log.textContent += `\nCreated "${name}" with ${uris.length} songs.` + (missing.length ? ` ${missing.length} not found.` : "");
         Spicetify.showNotification(`Created "${name}" (${uris.length} songs)`);
       } catch (e) {
