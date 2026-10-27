@@ -6,15 +6,21 @@ Turn an AI-generated song list into a real Spotify playlist, for free.
 
 ## Why
 
-AI chatbots are great at playlist ideas: "100 songs like my emo playlist", "a road-trip mix of 2000s pop-punk". But getting those songs into Spotify is the hard part. Their Spotify integrations usually can't create playlists on a free account (Claude's Spotify connector, for example, needs Premium for that), so you end up adding songs one by one.
+Want to make a quick playlist with low effort? AI can easily generate a list of songs for you. Just give an LLM a prompt, for example:
 
-Playlist Maker is the bridge. Ask any AI for a markdown list of songs, paste it into Spotify, and the extension finds each song and builds the playlist for you. It runs inside your own Spotify app through [Spicetify](https://spicetify.app), so there's no API key, no extra login, and no Premium needed.
+- "Give me 20 songs from artists like X, Y and Z."
+- "I'm going on a road trip, give me some sing-along songs."
+- "There's a song that goes 'is this the real life, is this just fantasy', what's it called?" Don't know the title or artist? Just give the AI a lyric or describe the song, and it can usually guess the right one.
+
+The catch is that having AI add the songs to Spotify for you requires Premium.
+
+That's why I made this. It's free and works with a free Spotify account. The AI makes a markdown list, you copy and paste it, done. All you need is [Spicetify](https://spicetify.app): no API key, no extra login and no Premium.
 
 ## Use
 
 1. Ask an AI for a song list, for example:
 
-   > Make me a markdown checklist of 50 songs similar to Paramore and Fall Out Boy, one per line, formatted as `- [ ] Title - Artist`.
+   > i like Levitating by Dua Lipa and Blinding Lights by The Weeknd. find me 30 more songs like that and some remixes too. make it a markdown list like `- [ ] Title - Artist`
 
 2. Click the **Playlist Maker** button in Spotify's top bar.
 3. Under **Add to**, pick **New playlist** and give it a name, or pick one of your existing playlists.
