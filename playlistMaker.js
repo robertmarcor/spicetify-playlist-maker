@@ -12,6 +12,13 @@
     return (items.length ? items : lines).map((l) => l.replace(/^([-*+]|\d+\.)\s+(\[.\]\s+)?/, "").trim()).filter(Boolean);
   }
 
+  // showNotification is missing in newer clients; the log in the modal already shows the result.
+  const notify = (msg, isError) => {
+    try {
+      Spicetify.showNotification?.(msg, isError) ?? Spicetify.Snackbar?.enqueueSnackbar?.(msg, { variant: isError ? "error" : "default" });
+    } catch {}
+  };
+
   const words = (s) => s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
 
   // Spotify's own search (CosmosAsync is gone in newer clients). Picks the track whose
@@ -51,7 +58,7 @@
       const name = $("#pm-name").value.trim() || "New Playlist";
       const songs = parseSongs($("#pm-songs").value);
       const log = $("#pm-log");
-      if (!songs.length) return Spicetify.showNotification("Paste at least one song", true);
+      if (!songs.length) return notify("Paste at least one song", true);
 
       $("#pm-go").disabled = true;
       log.textContent = "";
@@ -79,10 +86,10 @@
         const playlistUri = await Spicetify.Platform.RootlistAPI.createPlaylist(name, { before: "start" });
         await Spicetify.Platform.PlaylistAPI.add(playlistUri, uris, { before: "end" });
         log.textContent += `\nCreated "${name}" with ${uris.length} songs.` + (missing.length ? ` ${missing.length} not found.` : "");
-        Spicetify.showNotification(`Created "${name}" (${uris.length} songs)`);
+        notify(`Created "${name}" (${uris.length} songs)`);
       } catch (e) {
         log.textContent += `\nCould not create playlist: ${e?.message || e}`;
-        Spicetify.showNotification("Playlist creation failed", true);
+        notify("Playlist creation failed", true);
       }
       $("#pm-go").disabled = false;
       $("#pm-go").textContent = "Create playlist";
