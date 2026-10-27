@@ -1,0 +1,8 @@
+{
+  "name": "Playlist Maker",
+  "description": "Paste a song list (plain lines or a markdown checklist) and get a Spotify playlist.",
+  "preview": "preview.png",
+  "main": "playlistMaker.js",
+  "readme": "README.md",
+  "tags": ["playlist", "import"]
+}
